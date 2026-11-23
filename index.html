@@ -274,7 +274,7 @@ const stLabel=r=>r.doneAt?'Megoldva':r.acceptedBy?'Elvállalva'+(r.eta?` · ~${r
 /* ---------- views: each returns {t,s,l,r,body,dock} ---------- */
 const mine=()=>reports.filter(r=>r.reporter===me);
 const V={
- role:()=>({t:'E.ON Szerelő',s:'Ki használja most ezt az eszközt? A demóhoz nyisd meg két telefonon: az egyiken szerelőként, a másikon kollégaként.',
+ role:()=>({t:'E.ON Szerelő',s:S.dbState==='none'?'Ki használja most ezt az eszközt? Ez az egyeszközös változat: a szerepet a ••• menüben válthatod.':'Ki használja most ezt az eszközt? A demóhoz nyisd meg két telefonon: az egyiken szerelőként, a másikon kollégaként.',
   body:grp('',row({act:'setrole" data-r="peter',icon:sq('red',ic.cam),t:'Szerelő',s:'Hibát jelentek a helyszínről'})+row({act:'setrole" data-r="coll',icon:sq('tq',ic.list),t:'Ügyeletes kolléga',s:'Fogadom és kezelem a bejelentéseket'}))}),
  home:()=>{const m=[...queue.map(r=>({...r,_q:1})),...mine()].sort((a,b)=>b.createdAt-a.createdAt).slice(0,6);
   return{t:'Munkáim',s:`Hétfő · ${JOBS.length} munka van még hátra`,r:nb('sheet',ic.more,'Demó beállítások','ic'),
