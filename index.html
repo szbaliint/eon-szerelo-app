@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ea1b0a">
+<title>E.ON Szerelő – hibajelentés</title>
+<style>
+/* VOICE: iOS-natív munkaeszköz E.ON-arculatban – nyugodt, pontos, gyors (mérce: Apple saját appjai, Linear mobil)
+   IDEA: a kategória standardja egyenesen játszva: csoportosított listák, nagy cím, alsó lap, megszakítható rugók
+   PICTURE: maga az app; az E.ON piros színátmenet a háttér, a munka fehér kártyákon ül rajta
+   COLOUR and TYPE: E.ON piros #ea1c0a → bordó átmenet, fehér felületek, türkiz az állapotjelzéshez; rendszer-betű (SF Pro)
+   LAYOUT: 480px-es oszlop; nav sáv + nagy cím + csoportok; az elsődleges művelet alul, hüvelykujj-zónában */
+:root{
+ --red:#ea1b0a;--red-d:#c71607;--mag:#c91245;--pur:#9b1380;
+ --eon:linear-gradient(135deg,#ea1b0a 0%,#ea1b0a 48%,#c91245 74%,#9b1380 100%);
+ --ink:#1c1c1e;--ink2:#636366;--sep:rgba(60,60,67,.16);--fill:rgba(118,118,128,.12);--fill2:rgba(118,118,128,.2);
+ --card:#fff;--ground:#f2f2f7;--tq:#0e8794;--tq-l:#1ea2b1;--amb:#ffb020;--amb-ink:#8a5200;--ok:#248a3d;
+ --onred:rgba(255,255,255,.86);
+ --r-lg:16px;--r-md:12px;
+ --ease:cubic-bezier(.22,1,.36,1);
+ color-scheme:light;
+ font:17px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,"Segoe UI",Roboto,sans-serif;
+ -webkit-text-size-adjust:100%;
+}
+*{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
+html{background:#e5e5ea}
+body{margin:0;color:var(--ink);overflow-x:clip;min-height:100vh}
+
+::selection{background:rgba(234,28,10,.22)}
+input,textarea,select{caret-color:var(--red)}
+button{font:inherit;color:inherit}
+.app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;background:var(--ground)}
+.app::before{content:"";position:absolute;left:0;right:0;top:0;height:var(--hh,240px);background:var(--eon);background-size:100% max(100%,320px);background-position:left bottom;z-index:0}
+.app>*{position:relative;z-index:1}
+@media(min-width:520px){.app{box-shadow:0 0 0 .5px rgba(0,0,0,.08),0 30px 60px -30px rgba(0,0,0,.25)}}
+
+/* nav bar – translucent material over the gradient */
+.bar{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;min-height:52px;padding:calc(env(safe-area-inset-top) + 4px) 8px 4px;color:#fff;transition:background-color .25s var(--ease),box-shadow .25s var(--ease)}
+.bar.scrolled{background:linear-gradient(135deg,rgba(234,27,10,.94) 0%,rgba(234,27,10,.94) 55%,rgba(201,18,69,.94) 100%);-webkit-backdrop-filter:blur(20px) saturate(170%);backdrop-filter:blur(20px) saturate(170%);box-shadow:0 .5px 0 rgba(255,255,255,.18)}
+.bar .mid{font-weight:600;font-size:17px;opacity:0;transform:translateY(4px);transition:opacity .2s var(--ease),transform .2s var(--ease);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56vw}
+.bar.scrolled .mid{opacity:1;transform:none}
+.bar .l{justify-self:start}.bar .r{justify-self:end;display:flex;gap:2px}
+.nb{display:inline-flex;align-items:center;gap:2px;min-height:44px;min-width:44px;padding:0 10px;border:0;background:none;color:#fff;font-size:17px;cursor:pointer;border-radius:22px}
+.nb svg{width:22px;height:22px}
+.nb.ic{padding:0;justify-content:center}
+.nb:active{opacity:.5}
+.prog{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:2px 16px 8px}
+.prog i{height:4px;border-radius:2px;background:rgba(255,255,255,.28);overflow:hidden;position:relative}
+.prog i.on::after{content:"";position:absolute;inset:0;background:#fff;border-radius:2px;transform-origin:left;animation:fill .35s var(--ease) both}
+.prog i.done{background:#fff}
+@keyframes fill{from{transform:scaleX(0)}}
+
+#hero{padding:0 16px 30px}
+main{flex:1;padding:18px 16px 24px;background:var(--ground);border-radius:20px 20px 0 0;margin-top:-18px}
+.lt{font-size:34px;line-height:1.1;font-weight:700;letter-spacing:-.02em;color:#fff;margin:2px 4px 4px;text-wrap:balance}
+.ls{color:var(--onred);font-size:15px;margin:4px 4px 0;line-height:1.35}
+.banner{display:flex;gap:10px;align-items:center;margin:0 0 16px;padding:10px 14px;border-radius:var(--r-md);font-size:15px;font-weight:600;background:rgba(28,28,30,.82);color:#fff;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+.banner.q{background:#fff4d6;color:#5a3a00}
+.banner svg{width:20px;height:20px;flex:none}
+
+/* grouped lists */
+.grp{margin:0 0 22px}
+.gh{font-size:13px;font-weight:600;color:var(--ink2);margin:0 16px 7px;letter-spacing:.01em}
+.gf{font-size:13px;color:var(--ink2);margin:7px 16px 0;line-height:1.35}
+.list{background:var(--card);border-radius:var(--r-lg);overflow:hidden;box-shadow:0 .5px 1px rgba(0,0,0,.06)}
+.row{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:10px 16px;border:0;background:none;text-align:left;position:relative;cursor:default}
+button.row,label.row{cursor:pointer}
+.row+.row::before{content:"";position:absolute;top:0;right:0;left:var(--inset,16px);height:.5px;background:var(--sep)}
+.row.ii{--inset:60px}
+button.row:active,label.row:active{background:#ececf0}
+.rt{flex:1;display:flex;flex-direction:column;gap:1px}
+.rt b{font-weight:600;font-size:17px}
+.rt small{font-size:14px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.ra{display:flex;align-items:center;gap:6px;color:var(--ink2);font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chev{width:9px;height:15px;color:#c4c4c7;flex:none}
+.sq{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;flex:none;color:#fff}
+.sq svg{width:20px;height:20px}
+.sq.red{background:var(--red)}.sq.ink{background:#3a3a3c}.sq.tq{background:var(--tq-l)}.sq.amb{background:var(--amb);color:#3a2400}.sq.gry{background:#8e8e93}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--red);flex:none}
+
+/* severity badge: colour + icon + word */
+.sev{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;letter-spacing:.02em;padding:4px 9px 4px 7px;border-radius:999px;white-space:nowrap}
+.sev svg{width:14px;height:14px}
+.sev.K{background:var(--red);color:#fff}.sev.S{background:var(--amb);color:#3a2400}.sev.N{background:#e5e5ea;color:var(--ink)}
+.sevbox{padding:16px;display:flex;gap:14px;align-items:flex-start}
+.sevbox .big{font-size:28px;font-weight:800;letter-spacing:-.01em;line-height:1}
+.sevbox.K .sq{background:var(--red)}.sevbox.S .sq{background:var(--amb);color:#3a2400}.sevbox.N .sq{background:#8e8e93}
+.sevbox.K .big{color:var(--red)}.sevbox.S .big{color:var(--amb-ink)}
+.callout{display:flex;gap:12px;padding:14px 16px;background:#fff1ef;font-size:15px;line-height:1.4}
+.callout svg{width:22px;height:22px;color:var(--red);flex:none;margin-top:1px}
+
+/* controls */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:54px;border:0;border-radius:14px;background:var(--red);color:#fff;font-size:17px;font-weight:600;cursor:pointer;transition:transform .1s ease-out,background-color .1s ease-out}
+.btn:active{transform:scale(.97);background:var(--red-d)}
+.btn.sec{background:var(--fill);color:var(--ink)}
+.btn.sec:active{background:var(--fill2)}
+.btn.tint{background:#fff;color:var(--red)}
+.btn:disabled{opacity:.38;transform:none;cursor:default}
+.btn svg{width:20px;height:20px}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:#e3e3e8;border-radius:10px;padding:2px;gap:2px;flex:none}
+.seg button{min-height:40px;min-width:64px;border:0;border-radius:8px;background:none;font-size:15px;font-weight:600;cursor:pointer;color:var(--ink);transition:background-color .15s,box-shadow .15s}
+.seg button[aria-pressed=true]{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.14),0 0 0 .5px rgba(0,0,0,.04)}
+.seg button.y[aria-pressed=true]{color:var(--red)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px}
+.chip{min-height:40px;padding:0 14px;border-radius:999px;border:0;background:var(--fill);font-size:15px;font-weight:600;cursor:pointer;transition:transform .1s ease-out}
+.chip:active{transform:scale(.96)}
+.chip[aria-pressed=true]{background:var(--ink);color:#fff}
+.link{border:0;background:none;color:var(--red);font-size:17px;min-height:44px;padding:0 4px;cursor:pointer}
+.link.w{font-weight:600}
+.field{width:100%;border:0;background:none;font:17px/1.4 inherit;font-family:inherit;color:var(--ink);padding:0;outline:none}
+textarea.field{resize:none;min-height:72px}
+select.field{appearance:none;-webkit-appearance:none;font-weight:600}
+.field::placeholder{color:#a1a1a6}
+
+/* category tiles */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:22px}
+.tile{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:16px;min-height:104px;padding:14px;border:0;border-radius:var(--r-lg);background:#fff;text-align:left;font-size:16px;font-weight:600;line-height:1.2;cursor:pointer;box-shadow:0 .5px 1px rgba(0,0,0,.06);transition:transform .12s ease-out,box-shadow .15s}
+.tile:active{transform:scale(.97)}
+.tile[aria-pressed=true]{box-shadow:0 0 0 2.5px var(--ink)}
+.tile .ck{position:absolute;top:12px;right:12px;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;opacity:0;transform:scale(.6);transition:opacity .15s,transform .2s var(--ease)}
+.tile .ck svg{width:13px;height:13px}
+.tile[aria-pressed=true] .ck{opacity:1;transform:none}
+
+/* photo */
+.shoot{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;width:100%;min-height:230px;border:0;border-radius:var(--r-lg);background:#fff;cursor:pointer;font-size:18px;font-weight:600;box-shadow:0 .5px 1px rgba(0,0,0,.06);transition:transform .12s ease-out}
+.shoot:active{transform:scale(.98)}
+.shoot .lens{width:72px;height:72px;border-radius:50%;background:var(--eon);color:#fff;display:grid;place-items:center;box-shadow:0 0 0 6px #ffe3df}
+.shoot .lens svg{width:34px;height:34px}
+.shoot small{font-size:14px;font-weight:400;color:var(--ink2)}
+.thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px}
+.thumbs div{position:relative}
+.thumbs img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;display:block;background:#ddd}
+.thumbs .x{position:absolute;top:5px;right:5px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(28,28,30,.72);color:#fff;display:grid;place-items:center;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.thumbs .x svg{width:12px;height:12px}
+.strip{display:flex;gap:8px;overflow-x:auto;padding:0 16px 14px;scroll-snap-type:x mandatory}
+.strip img{height:120px;width:120px;object-fit:cover;border-radius:10px;scroll-snap-align:start;flex:none}
+
+/* AI + skeleton */
+.sk{height:14px;border-radius:7px;background:linear-gradient(90deg,#ececf0 0%,#f7f7f9 50%,#ececf0 100%);background-size:200% 100%;animation:sh 1.2s linear infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.conf{font-weight:700;color:var(--tq);font-variant-numeric:tabular-nums}
+
+/* mic */
+.mic{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:10px 16px;border:0;background:none;text-align:left;cursor:pointer;font-size:17px;font-weight:600;color:var(--red)}
+.mic .sq{background:var(--red)}
+.mic.rec .sq{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 7px rgba(234,28,10,.18)}}
+.partial{padding:0 16px 8px;color:var(--ink2);font-style:italic;font-size:15px;min-height:0}
+.partial:empty{display:none}
+
+/* timeline */
+.tl{list-style:none;margin:0;padding:6px 16px}
+.tl li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:12px;padding:10px 0;position:relative;color:#aeaeb2;font-weight:500}
+.tl li::before{content:"";position:absolute;left:10px;top:30px;bottom:-10px;width:2px;background:#e5e5ea}
+.tl li:last-child::before{display:none}
+.tl li.ok::before{background:var(--tq-l)}
+.tl .d{width:22px;height:22px;border-radius:50%;border:2px solid #d1d1d6;background:#fff;display:grid;place-items:center;position:relative;z-index:1}
+.tl li.ok{color:var(--ink)}
+.tl li.ok .d{background:var(--tq-l);border-color:var(--tq-l);color:#fff}
+.tl li.now .d{border-color:var(--tq-l);box-shadow:0 0 0 4px rgba(30,162,177,.18)}
+.tl .d svg{width:12px;height:12px}
+.tl small{color:var(--ink2);font-variant-numeric:tabular-nums}
+.stat{display:grid;grid-template-columns:1fr 1fr}
+.stat div{padding:14px 16px}
+.stat div+div{border-left:.5px solid var(--sep)}
+.stat b{display:block;font-size:26px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--ink2)}
+.msg{padding:10px 16px}
+.msg+.msg{border-top:.5px solid var(--sep)}
+.msg small{color:var(--ink2);font-size:13px}
+
+/* checklist */
+.ck-in{appearance:none;-webkit-appearance:none;width:26px;height:26px;border-radius:50%;border:2px solid #c7c7cc;margin:0;flex:none;display:grid;place-items:center;transition:background-color .15s,border-color .15s;cursor:pointer}
+.ck-in:checked{background:var(--red) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/15px no-repeat;border-color:var(--red)}
+.ck-in:checked+span{color:var(--ink2);text-decoration:line-through;text-decoration-color:rgba(60,60,67,.4)}
+
+/* dock */
+.dock{position:sticky;bottom:0;z-index:15;padding:12px 16px calc(12px + env(safe-area-inset-bottom));display:grid;gap:10px;background:rgba(250,250,252,.93);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);box-shadow:0 -.5px 0 rgba(0,0,0,.12)}
+.dock[hidden]{display:none}
+.dock .hint{font-size:13px;color:var(--ink2);text-align:center;margin:-2px 0 0}
+
+/* role picker */
+.empty{padding:28px 20px;text-align:center;color:var(--ink2);font-size:15px}
+.empty b{display:block;color:var(--ink);font-size:17px;margin-bottom:4px}
+
+/* sheet */
+.scrim{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .25s var(--ease)}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;max-width:480px;margin:0 auto;background:var(--ground);border-radius:14px 14px 0 0;padding:6px 16px calc(20px + env(safe-area-inset-bottom));transform:translateY(110%);touch-action:none;box-shadow:0 -10px 40px rgba(0,0,0,.25)}
+.sheet .grab{height:28px;display:grid;place-items:center;cursor:grab}
+.sheet .grab i{width:36px;height:5px;border-radius:3px;background:#c7c7cc}
+.sheet h2{font-size:20px;font-weight:700;margin:0 4px 14px}
+.sheet .gh,.sheet .gf{color:var(--ink2)}
+.sheet .list{box-shadow:none}
+.sw{appearance:none;-webkit-appearance:none;width:51px;height:31px;border-radius:16px;background:#e9e9eb;position:relative;margin:0;flex:none;cursor:pointer;transition:background-color .2s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.15),0 1px 1px rgba(0,0,0,.16);transition:transform .25s var(--ease)}
+.sw:checked{background:var(--red)}
+.sw:checked::after{transform:translateX(20px)}
+.danger{color:var(--red)}
+
+:focus-visible{outline:3px solid #0a84ff;outline-offset:2px;border-radius:8px}
+.bar :focus-visible{outline-color:#fff}
+.ls .sev.K{background:#fff;color:var(--red)}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+@media(prefers-reduced-transparency:reduce){.bar.scrolled{background:#c81407;backdrop-filter:none}.dock{background:#fff;backdrop-filter:none}}
+@media(prefers-contrast:more){.list,.tile{box-shadow:0 0 0 1.5px var(--ink)}.ls{color:#fff}.gh,.gf{color:var(--ink)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="bar" id="bar"><span class="l" id="barL"></span><span class="mid" id="barT"></span><span class="r" id="barR"></span></nav>
+  <div id="prog"></div>
+  <div id="hero"></div>
+  <main id="view"></main>
+  <div class="dock" id="dock" hidden></div>
+</div>
+<div class="scrim" id="scrim" data-act="sheetclose"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Demó beállítások"><div class="grab" id="grab"><i></i></div><div id="sheetBody"></div></div>
+<input type="file" id="cam" accept="image/*" capture="environment" multiple hidden>
+<script>
+{
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ls={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const hhmm=t=>t?new Date(t).toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'}):'';
+const mmss=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+const okImg=s=>typeof s==='string'&&/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(s);
+const buzz=p=>{try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}};
+const I=(p,w)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w||1.9}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const ic={
+ back:I('<path d="M15 5l-7 7 7 7"/>',2.4),more:I('<circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/>'),
+ chev:'<svg class="chev" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 1.5l6 6-6 6"/></svg>',
+ cam:I('<path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.8l1.4-2h6.6l1.4 2h1.8A2.5 2.5 0 0 1 21 8.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/><circle cx="12" cy="13" r="3.6"/>'),
+ warn:I('<path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.4v.1"/>',2.1),clock:I('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',2.1),
+ cal:I('<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'),
+ check:I('<path d="M5 12.5l4.5 4.5L19 7.5"/>',2.8),x:I('<path d="M6 6l12 12M18 6L6 18"/>',2.6),
+ pin:I('<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>'),
+ mic:I('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>'),
+ send:I('<path d="M4 12l16-8-6 16-2.5-6.5z"/>'),person:I('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
+ off:I('<path d="M2 8.5a15 15 0 0 1 5-2.9M22 8.5A15 15 0 0 0 11 5M5 12.5a10 10 0 0 1 4-2.2M19 12.5a10 10 0 0 0-2.6-1.7M8.5 16a5 5 0 0 1 5.2-1M3 3l18 18"/><circle cx="12" cy="19.5" r=".6" fill="currentColor"/>'),
+ queue:I('<path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 19h16"/>'),photo:I('<rect x="3" y="4.5" width="18" height="15" rx="2.5"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 8.5"/>'),
+ list:I('<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/>'),
+ gas:I('<path d="M2.5 9.5h7v5h-7M21.5 9.5h-7v5h7"/><path d="M9.5 10.5l2 1.5-2 1.5M14.5 10.5l-2 1.5 2 1.5"/>'),
+ seal:I('<circle cx="12" cy="14" r="6"/><path d="M12 3v5M9.5 14h5"/>'),
+ pole:I('<path d="M12 2.5v19M6 6.5h12M7.5 10.5h9"/><path d="M18 6.5l3.5 6.5"/>'),
+ meter:I('<rect x="4" y="3.5" width="16" height="17" rx="2.5"/><path d="M8 9h8M8 14h4"/>'),
+ other:I('<circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.4c-.6.3-1 .8-1 1.5v.6M12 16.8v.1"/>')};
+const CATS={
+ gas:{t:'Gázvezeték sérülés',c:'amb',subs:['Horpadás','Repedés','Szivárgás','Átszakadt'],team:'Gázhálózati ügyelet',q:[['gas','Érzel gázszagot?'],['hiss','Hallasz sziszegést?'],['ppl','Lakott terület, járókelők?']],todo:['Gáz elzárása a leágazásnál','Terület lezárása, szikramentes eszközök','Szivárgásmérés','Cső javítása vagy cseréje']},
+ seal:{t:'Plomba sérült vagy hiányzik',c:'tq',subs:['Hiányzik','Sérült','Gyanús beavatkozás'],team:'Mérésügyi csoport',q:[['tamp','Látszik illetéktelen beavatkozás?'],['ppl','Közvetlen veszély emberre?']],todo:['Mérő ellenőrzése, fotódokumentáció','Új plomba felhelyezése','Jegyzőkönyv a beavatkozásról']},
+ pole:{t:'Oszlop vagy vezeték',c:'red',subs:['Leszakadt vezeték','Megdőlt oszlop','Szikrázik'],team:'Áramhálózati üzemzavar-elhárítás',q:[['live','Feszültség alatt lehet?'],['road','Úton vagy járdán fekszik?'],['ppl','Járókelők a közelben?']],todo:['Hálózat lekapcsolása a diszpécseren keresztül','Terület lezárása 10 m-en','Oszlop vagy vezeték helyreállítása']},
+ meter:{t:'Mérőhely hiba',c:'ink',subs:['Törött burkolat','Beázás','Nem mér'],team:'Mérésügyi csoport',q:[['water','Víz vagy nedvesség a mérőhelyen?'],['ppl','Közvetlen veszély emberre?']],todo:['Mérőhely átvizsgálása','Burkolat vagy mérő cseréje','Ügyfél értesítése']},
+ other:{t:'Egyéb, nem tudom',c:'gry',subs:['Nem tudom besorolni'],team:'Diszpécserközpont',q:[['ppl','Közvetlen veszély emberre?'],['stop','Akadályozza a munkát?']],todo:['Helyszín felmérése','Megfelelő csapat kijelölése']}};
+const SEV={K:['Kritikus','Azonnali kiszállás. Ügyelet és műszakvezető értesítve.',ic.warn],S:['Sürgős','Kiszállás 4 órán belül.',ic.clock],N:['Normál','Ütemezett javítás.',ic.cal]};
+const sevB=v=>SEV[v]?`<span class="sev ${v}">${SEV[v][2]}${SEV[v][0]}</span>`:'';
+const JOBS=[{id:'48213',t:'Mérőhely ellenőrzés',a:'Budapest, Minta tér 4.',time:'Most'},{id:'48219',t:'Gázmérő csere',a:'Budapest, Fiktív utca 12.',time:'19:15'},{id:'48230',t:'Plomba csere',a:'Budapest, Próba köz 7.',time:'20:00'}];
+const sevOf=(cat,a)=>{if(cat==='gas'&&(a.gas||a.hiss))return'K';if(cat==='pole'&&(a.live||a.road))return'K';if(a.ppl)return'S';if(cat==='gas'||cat==='pole'||a.tamp||a.water)return'S';return'N'};
+const STEP={photo:1,id:2,sev:3,det:4};
+const DEPTH={role:0,home:0,inbox:0,photo:1,id:2,sev:3,det:4,status:5,case:1};
+
+let db=null,user=null,sample=null,dict=null,me=ls.get('eon_uid',null);
+if(!me){me='u'+Math.random().toString(36).slice(2,10);ls.set('eon_uid',me)}
+let S={role:ls.get('eon_role',null),v:'home',sim:false,open:null,dbState:'loading',filter:'open',sheet:false};
+let D=null,reports=[],seenIds=new Set(ls.get('eon_seen',[])),queue=ls.get('eon_queue',[]);
+const newDraft=()=>({photos:[],ai:null,aiState:'idle',cat:null,sub:null,ans:{},job:JOBS[0].id,addr:JOBS[0].a,note:'',partial:'',tags:[],t0:Date.now(),rec:false});
+const cur=()=>!S.role?'role':S.role==='coll'?(S.open?'case':'inbox'):S.v;
+const nb=(act,html,lab,cls)=>`<button class="nb ${cls||''}" data-act="${act}" ${lab?`aria-label="${lab}"`:''}>${html}</button>`;
+const row=(o)=>`<${o.act?'button':'div'} class="row ${o.icon?'ii':''}" ${o.act?`data-act="${o.act}"`:''} ${o.id?`data-id="${esc(o.id)}"`:''}>${o.icon||''}<span class="rt"><b>${o.t}</b>${o.s?`<small>${o.s}</small>`:''}</span>${o.r!==undefined?`<span class="ra">${o.r}</span>`:''}${o.act&&o.chev!==false?ic.chev:''}</${o.act?'button':'div'}>`;
+const sq=(c,i)=>`<span class="sq ${c}">${i}</span>`;
+const grp=(h,inner,f)=>`<section class="grp"><div class="list">${inner}</div>${f?`<p class="gf">${f}</p>`:''}</section>`;
+const stLabel=r=>r.doneAt?'Megoldva':r.acceptedBy?'Elvállalva'+(r.eta?` · ~${r.eta} perc`:''):r.seenBy?'Látták':'Kézbesítve';
+
+/* ---------- views: each returns {t,s,l,r,body,dock} ---------- */
+const mine=()=>reports.filter(r=>r.reporter===me);
+const V={
+ role:()=>({t:'E.ON Szerelő',s:'Ki használja most ezt az eszközt? A demóhoz nyisd meg két telefonon: az egyiken szerelőként, a másikon kollégaként.',
+  body:grp('',row({act:'setrole" data-r="peter',icon:sq('red',ic.cam),t:'Szerelő',s:'Hibát jelentek a helyszínről'})+row({act:'setrole" data-r="coll',icon:sq('tq',ic.list),t:'Ügyeletes kolléga',s:'Fogadom és kezelem a bejelentéseket'}))}),
+ home:()=>{const m=[...queue.map(r=>({...r,_q:1})),...mine()].sort((a,b)=>b.createdAt-a.createdAt).slice(0,6);
+  return{t:'Munkáim',s:`Hétfő · ${JOBS.length} munka van még hátra`,r:nb('sheet',ic.more,'Demó beállítások','ic'),
+  body:grp('Ma',JOBS.map((j,i)=>row({icon:sq(i?'gry':'red',ic.pin),t:esc(j.t),s:`${esc(j.a)} · #${j.id}`,r:i?esc(j.time):'<b style="color:var(--red)">Most</b>'})).join(''))+
+   grp('Bejelentéseim',m.length?m.map(r=>row({act:'status',id:r.id,icon:sq(CATS[r.cat]?.c||'gry',ic[r.cat]||ic.other),t:esc(CATS[r.cat]?.t||''),s:`${r._q?'Sorban áll':esc(stLabel(r))} · ${hhmm(r.createdAt)}`,r:sevB(r.sev)})).join(''):`<div class="empty"><b>Még nincs bejelentésed</b>Ha a helyszínen hibát találsz, a lenti gombbal egy perc alatt jelezheted.</div>`),
+  dock:`<button class="btn" data-act="start">${ic.cam}Hibát találtam</button>`}},
+ photo:()=>({t:'Fotózd le a hibát',s:'Közelről a sérülést, ha tudod, egy távolabbit is. Legfeljebb 3 kép.',l:nb('back',ic.back+'Munkáim'),r:nb('cancel','Mégse'),
+  body:(D.photos.length<3?`<button class="shoot" data-act="cam" style="margin-bottom:${D.photos.length?12:22}px"><span class="lens">${ic.cam}</span>${D.photos.length?'Még egy fotó':'Kamera megnyitása'}<small>vagy kép kiválasztása a galériából</small></button>`:'')+
+   (D.photos.length?grp('',`<div class="thumbs">${D.photos.map((p,i)=>`<div><img src="${p.data}" alt="${i+1}. fotó"><button class="x" data-act="rmph" data-i="${i}" aria-label="${i+1}. fotó törlése">${ic.x}</button></div>`).join('')}</div>`):'')+
+   `<div style="display:flex;justify-content:space-between;gap:8px;margin:-6px 0 0"><button class="link w" data-act="demo">Demófotó</button><button class="link w" data-act="skip">Folytatás fotó nélkül</button></div>`,
+  dock:`<button class="btn" data-act="toId" ${D.photos.length?'':'disabled'}>Tovább${D.photos.length?` · ${D.photos.length} fotó`:''}</button>`}),
+ id:()=>{const c=CATS[D.cat],a=D.ai;let ai='';
+  if(D.aiState==='busy')ai=grp('Javaslat a fotó alapján',`<div class="row"><span class="sq gry">${ic.photo}</span><span class="rt" style="gap:8px"><span class="sk" style="width:70%"></span><span class="sk" style="width:45%"></span></span></div>`);
+  else if(a&&CATS[a.cat])ai=grp('Javaslat a fotó alapján',`<div class="row">${sq(CATS[a.cat].c,ic[a.cat])}<span class="rt"><b>${esc(CATS[a.cat].t)}</b><small>${esc(a.sub||'')} · <span class="conf">${Math.round(a.confidence||0)}% egyezés</span></small></span>${D.cat===a.cat&&D.sub===a.sub?`<span class="ra" style="color:var(--ok)">${ic.check.replace('<svg','<svg width="20" height="20"')}</span>`:`<button class="chip" data-act="useai" style="background:var(--red);color:#fff">Elfogadom</button>`}</div>${a.why?`<div style="padding:0 16px 12px 60px;font-size:14px;color:var(--ink2)">${esc(a.why)}</div>`:''}`,'Javaslat, nem döntés: ha nem stimmel, válassz lent.');
+  else if(D.aiState==='fail'&&D.photos.length)ai=`<p class="gf" style="margin:0 4px 16px">Az automatikus felismerés most nem érhető el. Válassz kézzel.</p>`;
+  return{t:'Mit találtál?',l:nb('back',ic.back+'Fotó'),r:nb('cancel','Mégse'),
+  body:ai+`<div class="tiles">${Object.entries(CATS).map(([k,x])=>`<button class="tile" data-act="cat" data-c="${k}" aria-pressed="${D.cat===k}">${sq(x.c,ic[k])}<span>${x.t}</span><span class="ck">${ic.check}</span></button>`).join('')}</div>`+
+   (c?grp('Milyen jellegű?',`<div class="chips">${[...new Set([...c.subs,'Nem tudom'])].map(s=>`<button class="chip" data-act="sub" data-s="${esc(s)}" aria-pressed="${D.sub===s}">${esc(s)}</button>`).join('')}</div>`):''),
+  dock:`<button class="btn" data-act="go" data-v="sev" ${D.cat&&D.sub?'':'disabled'}>Tovább</button>`}},
+ sev:()=>{const l=CATS[D.cat].q,all=l.every(q=>q[0] in D.ans),v=sevOf(D.cat,D.ans);
+  const tip=v==='K'&&D.cat==='gas'?'Távolodj el, ne használj nyílt lángot, ne kapcsolj villanyt. Küldés után az ügyelet visszahív.':v==='K'&&D.cat==='pole'?'Tartsd távol az embereket legalább 10 méterre, és ne érj a vezetékhez.':'';
+  return{t:'Mennyire sürgős?',s:'Válaszolj a kérdésekre, a besorolást az app adja meg.',l:nb('back',ic.back+'Típus'),r:nb('cancel','Mégse'),
+  body:grp('',l.map(q=>`<div class="row" style="min-height:64px"><span class="rt"><b style="font-weight:500">${q[1]}</b></span><span class="seg" role="group" aria-label="${q[1]}"><button class="y" data-act="ans" data-q="${q[0]}" data-a="1" aria-pressed="${D.ans[q[0]]===true}">Igen</button><button data-act="ans" data-q="${q[0]}" data-a="0" aria-pressed="${D.ans[q[0]]===false}">Nem</button></span></div>`).join(''))+
+   (all?grp('Besorolás',`<div class="sevbox ${v}">${sq('',SEV[v][2])}<div><div class="big">${SEV[v][0]}</div><div style="font-size:15px;color:var(--ink2);margin-top:4px">${SEV[v][1]}</div></div></div>${tip?`<div class="callout">${ic.warn}<span><b>Most:</b> ${tip}</span></div>`:''}`):''),
+  dock:`<button class="btn" data-act="go" data-v="det" ${all?'':'disabled'}>Tovább az ellenőrzéshez</button>`}},
+ det:()=>{const c=CATS[D.cat],v=sevOf(D.cat,D.ans);
+  return{t:'Ellenőrzés és küldés',l:nb('back',ic.back+'Súlyosság'),r:nb('cancel','Mégse'),
+  body:grp('',row({icon:sq(c.c,ic[D.cat]),t:c.t,s:`${esc(D.sub)} · ${D.photos.length} fotó`,r:sevB(v)}))+
+   grp('Helyszín a munkalapról',`<label class="row ii">${sq('gry',ic.pin)}<span class="rt"><select class="field" id="jobSel" aria-label="Munkalap">${JOBS.map(j=>`<option value="${j.id}" ${D.job===j.id?'selected':''}>${esc(j.a)}</option>`).join('')}</select><small>Munkalap #${esc(D.job)}</small></span>${ic.chev}</label><div class="row ii" style="--inset:16px"><input class="field" id="addr" value="${esc(D.addr)}" aria-label="Pontos hely" placeholder="Pontosítás, pl. a ház előtt"></div>`)+
+   grp('Mit látsz?',(dict?`<button class="mic ${D.rec?'rec':''}" data-act="mic"><span class="sq">${ic.mic}</span>${D.rec?'Hallgatlak… koppints, ha kész':'Mondd el gépelés helyett'}</button><div class="partial" id="partial">${esc(D.partial)}</div>`:'')+`<div class="row" style="align-items:flex-start${dict?'':';--inset:16px'}"><textarea class="field" id="note" rows="3" placeholder="${dict?'A diktált szöveg ide kerül, javíthatod.':'Rövid megjegyzés. A billentyűzet mikrofonjával diktálhatsz is.'}">${esc(D.note)}</textarea></div><div class="chips" style="border-top:.5px solid var(--sep)">${['Területet lezártam','Útlezárás kell','Anyag kell','Ügyfél jelen van'].map(t=>`<button class="chip" data-act="tag" data-t="${t}" aria-pressed="${D.tags.includes(t)}">${t}</button>`).join('')}</div>`)+
+   grp('Címzett',row({icon:sq('tq',ic.person),t:c.team,s:v==='K'?'és a műszakvezető, kritikus besorolás miatt':'automatikusan kiválasztva',r:''}),'A címzettet a hibatípus, a helyszín és a súlyosság alapján az app választja.'),
+  dock:`<button class="btn" data-act="send">${ic.send}Küldés</button>`}},
+ status:()=>{const r=reports.find(x=>x.id===S.open)||queue.find(x=>x.id===S.open)||(S.last&&S.last.id===S.open?S.last:null);if(!r){S.v='home';return V.home()}
+  const q=queue.some(x=>x.id===r.id),c=CATS[r.cat]||CATS.other;
+  const st=[['Jelentés elküldve',r.createdAt,!q],['Kézbesítve: '+esc(c.team),r.createdAt,!q&&r._server],[`Látta: <span data-uid="${esc(r.seenBy||'')}">kolléga</span>`,r.seenAt,!!r.seenBy],[`Elvállalta: <span data-uid="${esc(r.acceptedBy||'')}">kolléga</span>${r.eta?` · érkezés ~${esc(r.eta)} perc`:''}`,r.acceptedAt,!!r.acceptedBy],['Megoldva',r.doneAt,!!r.doneAt]];
+  const nowI=st.findIndex(s=>!s[2]);
+  return{t:q?'Sorban áll':r.doneAt?'Megoldva':'Elküldve',s:q?'Amint lesz kapcsolat, magától elmegy. Kritikus hibánál hívd az ügyeletet is.':'Élőben látod, mi történik a bejelentéseddel.',l:nb('home',ic.back+'Munkáim'),
+  body:grp('',`<div class="stat"><div><b>${mmss(r.dur||0)}</b><span>rögzítés ideje</span></div><div><b>${sevB(r.sev)}</b><span>${esc(c.t)}</span></div></div>`)+
+   grp('Állapot',`<ul class="tl">${st.map((s,i)=>`<li class="${s[2]?'ok':''} ${i===nowI?'now':''}"><span class="d">${s[2]?ic.check:''}</span><span>${s[0]}</span><small>${s[2]?hhmm(s[1]):''}</small></li>`).join('')}</ul>`)+
+   ((r.msgs||[]).length?grp('Üzenetek',r.msgs.map(m=>`<div class="msg"><small><b data-uid="${esc(m.by)}">${m.by===me?'Te':'Kolléga'}</b> · ${hhmm(m.t)}</small><div>${esc(m.text)}</div></div>`).join('')):'')+
+   (q?'':grp('Gyors válasz',`<div class="chips">${['Biztosítom a helyszínt','Elhagytam a helyszínt','Kell még segítség'].map(t=>`<button class="chip" data-act="msg" data-t="${t}">${t}</button>`).join('')}</div>`)),
+  dock:`<button class="btn sec" data-act="home">Vissza a munkáimhoz</button>`}},
+ inbox:()=>{const order={K:0,S:1,N:2},open=reports.filter(r=>!r.doneAt),done=reports.filter(r=>r.doneAt);
+  const list=(S.filter==='open'?open:done).sort((a,b)=>(order[a.sev]-order[b.sev])||(b.createdAt-a.createdAt));
+  let body=`<div class="seg" style="margin:0 0 18px" role="tablist">${[['open','Nyitott',open.length],['done','Lezárt',done.length]].map(f=>`<button data-act="filter" data-f="${f[0]}" aria-pressed="${S.filter===f[0]}">${f[1]} · ${f[2]}</button>`).join('')}</div>`;
+  if(S.dbState==='loading')body+=grp('',[1,2,3].map(()=>`<div class="row ii"><span class="sq gry"></span><span class="rt" style="gap:8px"><span class="sk" style="width:60%"></span><span class="sk" style="width:40%"></span></span></div>`).join(''));
+  else if(!db&&S.dbState==='none')body+=grp('','<div class="empty"><b>Nincs közös adatbázis</b>Ebben a nézetben nem érhetők el a bejelentések.</div>');
+  else if(S.dbState==='slow'&&!reports.length)body+=grp('','<div class="empty"><b>Még nem érhetők el az adatok</b>Ellenőrizd a kapcsolatot, a lista magától frissül.</div>');
+  else if(!list.length)body+=grp('',`<div class="empty"><b>${S.filter==='open'?'Nincs nyitott bejelentés':'Még nincs lezárt bejelentés'}</b>${S.filter==='open'?'Az új bejelentések élőben, sürgősség szerint jelennek meg itt.':''}</div>`);
+  else body+=grp('',list.map(r=>{const c=CATS[r.cat]||CATS.other,ph=(r.photos||[]).find(okImg);return`<button class="row ii" data-act="openc" data-id="${esc(r.id)}" style="--inset:76px">${ph?`<img src="${ph}" alt="" style="width:48px;height:48px;border-radius:10px;object-fit:cover;flex:none">`:`<span style="width:48px;display:grid;place-items:center">${sq(c.c,ic[r.cat]||ic.other)}</span>`}<span class="rt"><b style="display:flex;gap:6px;align-items:center">${!seenIds.has(r.id)&&!r.doneAt?'<span class="dot" aria-label="Új"></span>':''}${esc(c.t)}</b><small>${esc(r.addr)}</small><small>${hhmm(r.createdAt)} · ${esc(stLabel(r))}</small></span><span class="ra">${sevB(r.sev)}</span></button>`}).join(''));
+  return{t:'Bejelentések',s:'Élő lista, a legsürgősebb felül.',r:nb('sheet',ic.more,'Demó beállítások','ic'),body}},
+ case:()=>{const r=reports.find(x=>x.id===S.open);if(!r){S.open=null;return V.inbox()}const c=CATS[r.cat]||CATS.other,todo=r.todo||{};
+  const ans=Object.entries(r.ans||{}).map(([k,v])=>{const q=(c.q.find(x=>x[0]===k)||[])[1];return q?row({t:`<span style="font-weight:400">${esc(q)}</span>`,r:v?'<b style="color:var(--red)">Igen</b>':'Nem'}):''}).join('');
+  const done=c.todo.filter((t,i)=>todo[i]).length;
+  return{t:c.t,s:`<span style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap">${sevB(r.sev)}<span>${esc(r.sub)} · ${hhmm(r.createdAt)}</span></span>`,l:nb('closec',ic.back+'Lista'),
+  body:
+   grp('Hol?',row({icon:sq('gry',ic.pin),t:esc(r.addr),s:`Munkalap #${esc(r.job)}`}))+
+   grp('Mi történt?',`${(r.photos||[]).filter(okImg).length?`<div class="strip" style="padding-top:14px">${r.photos.filter(okImg).map((p,i)=>`<img src="${p}" alt="Helyszíni fotó ${i+1}">`).join('')}</div>`:''}<div class="row" style="${(r.photos||[]).length?'':''}"><span class="rt"><span style="font-size:17px">${r.note?esc(r.note):'<span style="color:var(--ink2)">Nincs szöveges megjegyzés.</span>'}</span>${(r.tags||[]).length?`<small style="margin-top:4px">${r.tags.map(esc).join(' · ')}</small>`:''}</span></div>`)+
+   (ans?grp('Biztonsági kérdések',ans):'')+
+   grp(`Teendők · ${done}/${c.todo.length}`,c.todo.map((t,i)=>`<label class="row"><input type="checkbox" class="ck-in" data-act="todo" data-i="${i}" ${todo[i]?'checked':''}><span class="rt" style="font-size:17px">${esc(t)}</span></label>`).join(''))+
+   grp('Bejelentő',row({icon:sq('red',ic.person),t:`<span data-uid="${esc(r.reporter)}">Szerelő</span>`,s:`${mmss(r.dur||0)} alatt rögzítve`}))+
+   ((r.msgs||[]).length?grp('Üzenetek',r.msgs.map(m=>`<div class="msg"><small><b data-uid="${esc(m.by)}">${m.by===me?'Te':'Szerelő'}</b> · ${hhmm(m.t)}</small><div>${esc(m.text)}</div></div>`).join('')):'')+
+   grp('Üzenet a szerelőnek',`<div class="chips">${['Úton vagyok','Zárd le a területet','Várj a helyszínen'].map(t=>`<button class="chip" data-act="msg" data-t="${t}">${t}</button>`).join('')}</div>`),
+  dock:r.doneAt?`<button class="btn sec" data-act="closec">Megoldva ${hhmm(r.doneAt)} · vissza a listához</button>`:r.acceptedBy?`<button class="btn" data-act="done">${ic.check}Megoldva, lezárom</button>`:`<div class="seg" role="group" aria-label="Érkezési idő">${[15,30,60].map(m=>`<button data-act="eta" data-m="${m}" aria-pressed="${S.eta===m}">~${m} perc</button>`).join('')}</div><button class="btn" data-act="accept" ${S.eta?'':'disabled'}>Elvállalom</button>`}}
+};
+
+/* ---------- render ---------- */
+let lastView=null;
+function render(){
+ const v=cur(),o=V[v]();
+ $('#barL').innerHTML=o.l||'';$('#barR').innerHTML=o.r||'';$('#barT').textContent=o.t||'';
+ const st=STEP[v];$('#prog').innerHTML=st?`<div class="prog" aria-label="${st}. lépés a 4-ből">${[1,2,3,4].map(i=>`<i class="${i<st?'done':i===st?'on':''}"></i>`).join('')}</div>`:'';
+ const offline=S.sim||!navigator.onLine;let bn='';
+ if(queue.length)bn=`<div class="banner q">${ic.queue}<span>${queue.length} bejelentés sorban áll. ${offline?'Kapcsolat nélkül vagy, magától elmegy.':'Küldés folyamatban…'}</span></div>`;
+ else if(offline)bn=`<div class="banner">${ic.off}<span>Nincs kapcsolat. Amit most küldesz, elmentjük és később továbbítjuk.</span></div>`;
+ else if(!db&&S.dbState==='none'&&S.role)bn=`<div class="banner">${ic.off}<span>A közös adatbázis itt nem érhető el, a bejelentések csak ezen az eszközön maradnak.</span></div>`;
+ $('#hero').innerHTML=`<h1 class="lt">${esc(o.t)}</h1>${o.s?`<p class="ls">${o.s}</p>`:''}`;
+ const view=$('#view');view.innerHTML=bn+o.body;
+ document.querySelector('.app').style.setProperty('--hh',(view.offsetTop+30)+'px');
+ const d=$('#dock');d.hidden=!o.dock;d.innerHTML=o.dock||'';
+ if(lastView!==null&&lastView!==v){const dir=(DEPTH[v]??0)>=(DEPTH[lastView]??0)?1:-1;
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches)[view,$('#hero')].forEach(el=>el.animate([{transform:`translateX(${dir*28}px)`,opacity:0},{transform:'none',opacity:1}],{duration:280,easing:'cubic-bezier(.22,1,.36,1)'}));
+  else view.animate([{opacity:0},{opacity:1}],{duration:160});
+  window.scrollTo(0,0)}
+ lastView=v;onScroll();fillNames();if(S.sheet)renderSheet();
+}
+function onScroll(){$('#bar').classList.toggle('scrolled',window.scrollY>36)}
+window.addEventListener('scroll',onScroll,{passive:true});
+async function fillNames(){document.querySelectorAll('span[data-uid]').forEach(e=>{if(e.dataset.uid&&e.dataset.uid===me)e.textContent='te'});if(!user)return;
+ const els=[...document.querySelectorAll('[data-uid]')].filter(e=>e.dataset.uid&&e.dataset.uid!==me);if(!els.length)return;
+ try{const ps=await user.profiles([...new Set(els.map(e=>e.dataset.uid))]);els.forEach(e=>{const n=ps?.[e.dataset.uid]?.name;if(n)e.textContent=n})}catch(e){}}
+
+/* ---------- sheet with interruptible spring + velocity projection ---------- */
+const sheet=$('#sheet'),scrim=$('#scrim');let sy=0,svel=0,starget=0,sraf=0,shown=false;
+const sH=()=>sheet.offsetHeight+20;
+function springTo(t,v0){starget=t;if(v0!==undefined)svel=v0;cancelAnimationFrame(sraf);let last=performance.now();
+ const resp=.38,k=(2*Math.PI/resp)**2,c=4*Math.PI*1/resp;
+ const step=now=>{const dt=Math.min(.032,(now-last)/1000);last=now;const a=-k*(sy-starget)-c*svel;svel+=a*dt;sy+=svel*dt;
+  sheet.style.transform=`translateY(${sy}px)`;scrim.style.opacity=String(Math.max(0,1-sy/sH()));
+  if(Math.abs(sy-starget)<.5&&Math.abs(svel)<5){sy=starget;sheet.style.transform=`translateY(${sy}px)`;if(!shown){sheet.style.visibility='hidden'}return}
+  sraf=requestAnimationFrame(step)};
+ sraf=requestAnimationFrame(step)}
+const reduce=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+function openSheet(){S.sheet=true;shown=true;renderSheet();sheet.style.visibility='visible';scrim.classList.add('on');scrim.style.opacity='';
+ if(reduce()){sy=0;sheet.style.transform='none';return}springTo(0)}
+function closeSheet(v0){S.sheet=false;shown=false;scrim.classList.remove('on');if(reduce()){sheet.style.transform='translateY(110%)';sheet.style.visibility='hidden';return}springTo(sH(),v0)}
+sheet.style.visibility='hidden';sy=900;
+function renderSheet(){const off=S.sim;
+ $('#sheetBody').innerHTML=`<h2>Demó beállítások</h2>
+ <div class="list" style="margin-bottom:22px"><div class="row"><span class="seg" style="flex:1" role="group" aria-label="Szerep"><button data-act="setrole" data-r="peter" aria-pressed="${S.role==='peter'}">Szerelő</button><button data-act="setrole" data-r="coll" aria-pressed="${S.role==='coll'}">Kolléga</button></span></div></div>
+ <div class="list"><label class="row"><span class="rt"><b style="font-weight:400">Offline szimuláció</b><small>A bejelentések sorba állnak, amíg vissza nem kapcsolod.</small></span><input type="checkbox" class="sw" data-act="simoff" ${off?'checked':''} aria-label="Offline szimuláció"></label>
+ ${S.owner&&reports.length?`<button class="row" data-act="wipe"><span class="rt"><b class="danger" style="font-weight:400">${S.wipe?'Biztosan törlöd? Koppints újra.':'Demóadatok törlése'}</b></span></button>`:''}</div>
+ <p class="gf">Fiktív címek és munkalapok, bemutatási célra.</p>`}
+{let dragging=false,y0=0,s0=0,hist=[];
+ sheet.addEventListener('pointerdown',e=>{if(!e.target.closest('#grab,h2'))return;dragging=true;sheet.setPointerCapture(e.pointerId);cancelAnimationFrame(sraf);sraf=0;y0=e.clientY;s0=sy;hist=[{y:e.clientY,t:e.timeStamp}]});
+ sheet.addEventListener('pointermove',e=>{if(!dragging)return;let ny=s0+(e.clientY-y0);if(ny<0){const o=-ny,dim=sH();ny=-(o*dim*.55)/(dim+.55*o)}sy=ny;sheet.style.transform=`translateY(${sy}px)`;scrim.style.opacity=String(Math.max(0,1-sy/sH()));hist.push({y:e.clientY,t:e.timeStamp});if(hist.length>6)hist.shift()});
+ const end=e=>{if(!dragging)return;dragging=false;const a=hist[0],b=hist[hist.length-1];const v=b&&a&&b.t>a.t?(b.y-a.y)/((b.t-a.t)/1000):0;
+  const proj=sy+(v/1000)*.998/(1-.998);if(proj>sH()*.45)closeSheet(v);else springTo(0,v)};
+ sheet.addEventListener('pointerup',end);sheet.addEventListener('pointercancel',end)}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.sheet)closeSheet()});
+
+/* ---------- photos & AI ---------- */
+async function shrink(src){const img=new Image();const url=src instanceof Blob?URL.createObjectURL(src):src;await new Promise((r,j)=>{img.onload=r;img.onerror=j;img.src=url});
+ const mk=max=>{const s=Math.min(1,max/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext('2d').drawImage(img,0,0,c.width,c.height);return c};
+ const small=mk(560).toDataURL('image/jpeg',.55);const blob=await new Promise(r=>mk(1024).toBlob(r,'image/jpeg',.8));if(src instanceof Blob)URL.revokeObjectURL(url);return{data:small,blob}}
+const DEMO=`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800"><defs><linearGradient id="p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6cf47"/><stop offset=".5" stop-color="#d9a400"/><stop offset="1" stop-color="#8f6b00"/></linearGradient></defs><rect width="800" height="800" fill="#6b5a45"/><rect y="0" width="800" height="380" fill="#a9a39a"/><rect x="0" y="330" width="800" height="110" fill="url(#p)"/><path d="M430 330 l-18 40 l26 14 l-14 30 l10 26" stroke="#1a1a1a" stroke-width="9" fill="none"/><ellipse cx="430" cy="392" rx="70" ry="22" fill="#5a4300" opacity=".45"/><rect x="120" y="120" width="120" height="180" fill="#ddd" stroke="#555" stroke-width="6"/><circle cx="180" cy="200" r="34" fill="#fff" stroke="#333" stroke-width="5"/><text x="140" y="290" font-size="22" font-family="Arial" fill="#333">GÁZ</text></svg>`;
+async function addPhotos(files){for(const f of files){if(D.photos.length>=3)break;try{D.photos.push(await shrink(f))}catch(e){}}render()}
+async function runAI(){if(!sample||!D.photos.length){D.aiState='fail';return render()}
+ D.aiState='busy';render();
+ try{const lim=await sample.limits?.();if(lim&&!lim.images)throw 0;
+  const list=Object.entries(CATS).map(([k,c])=>`${k} = ${c.t} (altípusok: ${c.subs.join(', ')})`).join('\n');
+  const res=await sample(`Egy E.ON hálózati szerelő helyszíni fotóját látod. Sorold be a látható hibát az alábbi kategóriák egyikébe:\n${list}\nVálaszolj KIZÁRÓLAG egy JSON objektummal, más szöveg nélkül: {"cat":"<kulcs>","sub":"<a kategória egyik altípusa>","confidence":<0-100>,"why":"<legfeljebb 12 szó magyarul, mit látsz>"}. Ha nem látszik közműhiba, cat=other és alacsony confidence.`,{images:D.photos.map(p=>p.blob),modelTier:'quick'});
+  const m=(res.text||'').match(/\{[\s\S]*\}/);const a=m?JSON.parse(m[0]):null;
+  if(!a||!CATS[a.cat])throw 0;if(!CATS[a.cat].subs.includes(a.sub))a.sub=CATS[a.cat].subs[0];
+  D.ai=a;D.aiState='ok';if(!D.cat){D.cat=a.cat;D.sub=a.sub}
+ }catch(e){if(D)D.aiState='fail'}
+ if(D&&S.v==='id')render()}
+
+/* ---------- data ---------- */
+function persistQ(){ls.set('eon_queue',queue)}
+async function flush(){if(!db||S.sim||!navigator.onLine||!queue.length||flush.busy)return;flush.busy=true;
+ try{while(queue.length&&!S.sim){const r=queue[0];await db.collection('reports').doc(r.id).set(r);queue.shift();persistQ()}}catch(e){}
+ flush.busy=false;render()}
+function send(){const c=CATS[D.cat],r={id:'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),cat:D.cat,sub:D.sub,sev:sevOf(D.cat,D.ans),ans:D.ans,job:D.job,addr:($('#addr')?.value||D.addr).slice(0,200),note:($('#note')?.value??D.note).slice(0,1000),tags:D.tags,photos:D.photos.map(p=>p.data),team:c.team,reporter:me,createdAt:Date.now(),dur:Math.max(1,Math.round((Date.now()-D.t0)/1000)),msgs:[],todo:{}};
+ if(D.rec&&dict){try{dict.stop()}catch(e){}}
+ buzz(15);S.last=r;queue.push(r);persistQ();S.open=r.id;S.v='status';D=null;render();flush()}
+async function upd(id,data){if(!db)return;try{await db.collection('reports').doc(id).update(data)}catch(e){}}
+function subscribe(){const t=setTimeout(()=>{if(S.dbState==='loading'){S.dbState='slow';render()}},10000);
+ db.collection('reports').orderBy('createdAt','desc').limit(60).onSnapshot(snap=>{
+  reports=snap.docs.map(d=>({...d.data(),id:d.id,_server:!d.metadata.fromCache&&!d.metadata.hasPendingWrites}));
+  if(!snap.metadata.fromCache){clearTimeout(t);S.dbState='ok'}else if(S.dbState==='loading'&&reports.length)S.dbState='ok';
+  if(S.role==='coll'){const fresh=reports.filter(r=>!seenIds.has(r.id)&&!r.doneAt&&r.sev==='K').length;if(subscribe.n!==undefined&&fresh>subscribe.n)buzz([200,100,200]);subscribe.n=fresh}
+  if(document.activeElement&&/TEXTAREA|INPUT|SELECT/.test(document.activeElement.tagName)&&document.activeElement.type!=='checkbox')return;render()},
+  e=>{clearTimeout(t);S.dbState='slow';render()})}
+
+/* ---------- events ---------- */
+const keepNote=()=>{if(D){const n=$('#note');if(n)D.note=n.value;const a=$('#addr');if(a)D.addr=a.value}};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
+ if(a==='todo'||a==='simoff')return;
+ if(a==='setrole'){S.role=b.dataset.r;ls.set('eon_role',S.role);S.v='home';S.open=null;D=null;if(S.sheet)closeSheet();return render()}
+ if(a==='sheet')return openSheet();
+ if(a==='sheetclose')return closeSheet();
+ if(a==='start'){D=newDraft();S.v='photo';return render()}
+ if(a==='cancel'||a==='home'){if(D&&D.rec&&dict){try{dict.stop()}catch(e){}}D=null;S.v='home';S.open=null;return render()}
+ if(a==='back'){keepNote();S.v={photo:'home',id:'photo',sev:'id',det:'sev'}[S.v]||'home';if(S.v==='home')D=null;return render()}
+ if(a==='cam')return $('#cam').click();
+ if(a==='rmph'){D.photos.splice(+b.dataset.i,1);D.ai=null;D.aiState='idle';return render()}
+ if(a==='demo'){shrink(new Blob([DEMO],{type:'image/svg+xml'})).then(p=>{if(D){D.photos.push(p);render()}});return}
+ if(a==='skip'){D.photos=[];D.aiState='idle';D.ai=null;S.v='id';return render()}
+ if(a==='toId'){S.v='id';render();if(D.aiState!=='ok')runAI();return}
+ if(a==='useai'){D.cat=D.ai.cat;D.sub=D.ai.sub;D.ans={};return render()}
+ if(a==='cat'){D.cat=b.dataset.c;D.sub=D.ai&&D.ai.cat===D.cat?D.ai.sub:null;D.ans={};return render()}
+ if(a==='sub'){D.sub=b.dataset.s;return render()}
+ if(a==='ans'){D.ans[b.dataset.q]=b.dataset.a==='1';return render()}
+ if(a==='go'){keepNote();S.v=b.dataset.v;return render()}
+ if(a==='tag'){keepNote();const t=b.dataset.t;D.tags=D.tags.includes(t)?D.tags.filter(x=>x!==t):[...D.tags,t];return render()}
+ if(a==='mic'){keepNote();if(D.rec){D.rec=false;dict.stop().catch(()=>{});render()}else{dict.start().catch(()=>{if(D){D.rec=false;render()}});D.rec=true;render()}return}
+ if(a==='send')return send();
+ if(a==='status'){S.open=b.dataset.id;S.v='status';return render()}
+ if(a==='msg'){const r=reports.find(x=>x.id===S.open);if(r){buzz(8);upd(r.id,{msgs:[...(r.msgs||[]),{by:me,t:Date.now(),text:b.dataset.t}].slice(-30)})}return}
+ if(a==='filter'){S.filter=b.dataset.f;return render()}
+ if(a==='openc'){const id=b.dataset.id;S.open=id;S.eta=null;seenIds.add(id);ls.set('eon_seen',[...seenIds]);const r=reports.find(x=>x.id===id);if(r&&!r.seenBy)upd(id,{seenBy:me,seenAt:Date.now()});return render()}
+ if(a==='closec'){S.open=null;return render()}
+ if(a==='eta'){S.eta=+b.dataset.m;return render()}
+ if(a==='accept'){if(!S.eta)return;buzz(15);upd(S.open,{acceptedBy:me,acceptedAt:Date.now(),eta:S.eta});return}
+ if(a==='done'){buzz(15);upd(S.open,{doneAt:Date.now()});return}
+ if(a==='wipe'){if(S.wipe){S.wipe=false;Promise.all(reports.map(r=>db.collection('reports').doc(r.id).delete().catch(()=>{}))).then(render)}else{S.wipe=true;renderSheet()}return}
+});
+document.addEventListener('change',e=>{const t=e.target;
+ if(t.id==='cam'){addPhotos([...t.files]);t.value=''}
+ if(t.id==='jobSel'){keepNote();D.job=t.value;D.addr=JOBS.find(j=>j.id===t.value).a;render()}
+ if(t.dataset.act==='simoff'){S.sim=t.checked;render();if(!S.sim)flush()}
+ if(t.dataset.act==='todo'){const r=reports.find(x=>x.id===S.open);if(r){buzz(8);upd(r.id,{todo:{...(r.todo||{}),[t.dataset.i]:t.checked}})}}});
+document.addEventListener('input',e=>{if(!D)return;if(e.target.id==='note')D.note=e.target.value;if(e.target.id==='addr')D.addr=e.target.value});
+window.addEventListener('online',()=>{render();flush()});window.addEventListener('offline',render);
+setInterval(()=>{if(queue.length)flush()},15000);
+
+render();
+(async()=>{
+ try{db=await claude.use('db')}catch(e){db=null}
+ try{user=await claude.use('user');if(user){const id=await user.id();if(id){me=id;ls.set('eon_uid',me)}S.owner=(await user.isOwner())??false}}catch(e){}
+ if(db){subscribe();flush()}else{S.dbState='none'}
+ try{sample=await claude.use('sample')}catch(e){}
+ try{dict=await claude.use('dictation');if(dict){
+  dict.onPartial(({text})=>{if(D){D.partial=text;const p=$('#partial');if(p)p.textContent=text}});
+  dict.onFinal(({text})=>{if(D){D.note=((($('#note')?.value)??D.note)+' '+text).trim();D.partial='';const n=$('#note');if(n)n.value=D.note;const p=$('#partial');if(p)p.textContent=''}});
+  dict.onState(({state})=>{if(D){const was=D.rec;D.rec=state==='listening';if(was!==D.rec&&S.v==='det'){keepNote();render()}}});
+ }}catch(e){dict=null}
+ render();
+})();
+}
+</script>
+</body>
+</html>

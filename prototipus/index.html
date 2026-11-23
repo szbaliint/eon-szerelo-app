@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gyors hibajelentés – prototípus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: terepi szerszám – nyers, kontrasztos, határozott, mint egy jól megtervezett ipari kezelőpanel
+   IDEA: a figyelmeztető tábla / hibacédula, amit a szerelő ráragaszt a hibás eszközre
+   PICTURE: maga a működő telefonos prototípus, mellette a jegyzetsáv a lépésekhez
+   COLOUR and TYPE: E.ON piros #ea1c0a, fekete, fehér, súlyossági sárga; Figtree 500–800
+   LAYOUT: telefon középen-balra, mellette lépésjelző és döntések; 600px alatt a telefon teljes szélesség */
+:root{color-scheme:light dark;--bg:light-dark(#e9e9e7,#141414);--ink:light-dark(#151515,#f1f1f1);--mut:light-dark(#5c5c5c,#a9a9a9);--line:light-dark(#cfcfcc,#333);--red:#ea1c0a;--amb:#f2b705;--ok:#178a4c}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Figtree,system-ui,sans-serif;overflow-x:clip}
+.wrap{max-width:1180px;margin:0 auto;padding:clamp(20px,3vw,44px) max(4vw,16px);display:grid;grid-template-columns:420px minmax(0,1fr);gap:clamp(24px,4vw,56px);align-items:start}
+h1{font-size:clamp(30px,4vw,44px);line-height:1.05;margin:0 0 10px;text-wrap:balance}
+.lead{color:var(--mut);margin:0 0 22px;max-width:60ch}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
+.ctl button{font:600 15px Figtree,sans-serif;min-height:44px;padding:0 16px;border-radius:999px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer}
+.ctl button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.steps{list-style:none;padding:0;margin:0;border-top:1px solid var(--line)}
+.steps li{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;padding:14px 0;border-bottom:1px solid var(--line);color:var(--mut)}
+.steps li b{display:block;color:var(--ink);font-size:17px}
+.steps li .n{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-weight:700;font-size:14px}
+.steps li.on .n{background:var(--red);border-color:var(--red);color:#fff}
+.steps li.done .n{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.note{font-size:13px;color:var(--mut);margin-top:16px}
+/* phone */
+.phone{width:100%;max-width:400px;aspect-ratio:9/18.5;background:#0b0b0b;border-radius:46px;padding:12px;box-shadow:0 30px 60px -20px rgba(0,0,0,.45);position:sticky;top:20px}
+.scr{position:relative;width:100%;height:100%;border-radius:36px;overflow:hidden;background:#fff;color:#141414;display:flex;flex-direction:column}
+.sb{display:flex;justify-content:space-between;padding:12px 22px 4px;font-size:13px;font-weight:700}
+.off{background:#141414;color:#fff;font-size:13px;font-weight:600;padding:7px 16px;display:none}
+.off.show{display:block}
+.view{flex:1;overflow-y:auto;padding:6px 16px 0;display:flex;flex-direction:column}
+.foot{padding:12px 16px 18px;display:grid;gap:8px;background:#fff;border-top:1px solid #eee}
+.big{font:800 19px Figtree,sans-serif;min-height:64px;border:0;border-radius:18px;background:var(--red);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;width:100%}
+.big.dark{background:#141414}.big.ghost{background:#f0f0ef;color:#141414;font-weight:700;font-size:16px;min-height:52px}
+.big:disabled{opacity:.35}
+.h{font-size:24px;font-weight:800;line-height:1.1;margin:8px 0 4px}
+.sub{font-size:14px;color:#5c5c5c;margin:0 0 12px}
+.card{border:1.5px solid #e4e4e2;border-radius:18px;padding:14px;margin-bottom:10px}
+.job{background:#141414;color:#fff;border:0}
+.job small{color:#bbb}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:#eee}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{font:700 15px/1.2 Figtree,sans-serif;min-height:92px;border:2px solid #e4e4e2;border-radius:16px;background:#fff;color:#141414;padding:10px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer}
+.tile svg{width:30px;height:30px}
+.tile[aria-pressed=true]{border-color:#141414;background:#141414;color:#fff}
+.ai{background:#fff4f2;border:2px solid var(--red)}
+.ai .pct{font-weight:800;color:var(--red)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 12px}
+.chip{font:700 15px Figtree,sans-serif;min-height:46px;padding:0 16px;border-radius:999px;border:2px solid #dcdcda;background:#fff;color:#141414;cursor:pointer}
+.chip[aria-pressed=true]{background:#141414;border-color:#141414;color:#fff}
+.q{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #eee;font-weight:700;font-size:17px}
+.yn{display:flex;gap:6px}
+.yn button{font:800 15px Figtree,sans-serif;width:64px;height:52px;border-radius:14px;border:2px solid #dcdcda;background:#fff;cursor:pointer;color:#141414}
+.yn button[aria-pressed=true].y{background:var(--red);border-color:var(--red);color:#fff}
+.yn button[aria-pressed=true].n{background:#141414;border-color:#141414;color:#fff}
+.sev{border-radius:18px;padding:14px;margin-top:14px;color:#fff;font-weight:700}
+.sev .lvl{font-size:26px;font-weight:800;line-height:1}
+.sev.K{background:var(--red)}.sev.S{background:var(--amb);color:#141414}.sev.N{background:#2c2c2c}
+.cam{flex:1;margin:0 -16px;background:#1d2227;position:relative;display:grid;place-items:center;overflow:hidden}
+.cam svg{width:100%;height:100%;position:absolute;inset:0}
+.cam .hint{position:absolute;top:12px;left:12px;right:12px;background:rgba(0,0,0,.6);color:#fff;font-size:14px;font-weight:600;padding:8px 12px;border-radius:12px}
+.cam .cnt{position:absolute;bottom:12px;left:12px;background:#fff;color:#141414;font-weight:800;font-size:14px;padding:6px 12px;border-radius:999px}
+.flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .25s}
+.shut{width:84px;height:84px;border-radius:50%;border:6px solid #141414;background:var(--red);cursor:pointer;justify-self:center}
+.camrow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
+.camrow button.link{font:700 15px Figtree,sans-serif;background:none;border:0;color:#141414;min-height:44px;cursor:pointer}
+.row{display:flex;align-items:center;gap:10px}
+.thumbs{display:flex;gap:6px}.thumbs i{width:44px;height:44px;border-radius:10px;background:#3a434b;display:block}
+.mic{font:800 16px Figtree,sans-serif;width:100%;min-height:60px;border-radius:16px;border:2px dashed #141414;background:#fff;color:#141414;cursor:pointer}
+.mic.rec{background:#141414;color:#fff;border-style:solid}
+.tl{list-style:none;padding:0;margin:8px 0}
+.tl li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;padding:9px 0;align-items:start;font-weight:600}
+.tl li span.d{width:14px;height:14px;border-radius:50%;background:#ddd;margin-top:4px}
+.tl li.ok span.d{background:var(--ok)}
+.tl li small{color:#5c5c5c;font-weight:500;white-space:nowrap}
+.tl li:not(.ok){color:#9a9a9a}
+.stat{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 10px}
+.stat div{background:#f3f3f2;border-radius:14px;padding:10px}
+.stat b{font-size:24px;display:block;line-height:1.1}
+.map{height:110px;border-radius:14px;background:#dfe6dc;position:relative;overflow:hidden;margin:8px 0}
+.map svg{position:absolute;inset:0;width:100%;height:100%}
+.todo label{display:flex;gap:10px;align-items:center;min-height:44px;font-weight:600}
+.todo input{width:22px;height:22px;accent-color:#141414}
+:focus-visible{outline:3px solid #2f6bff;outline-offset:2px}
+@media(max-width:860px){.wrap{grid-template-columns:minmax(0,1fr)}.side{order:-1}.phone{margin:0 auto;position:relative;top:0}}
+@media(max-width:600px){.phone{border-radius:34px;padding:8px}.scr{border-radius:28px}}
+@media(prefers-reduced-motion:reduce){.flash{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="phone"><div class="scr" id="scr">
+    <div class="sb"><span id="clock">18:52</span><span id="net">5G ▮▮▮</span></div>
+    <div class="off" id="offbar">Nincs térerő – a jelentés elmentve, automatikusan elküldjük</div>
+    <div class="view" id="view"></div>
+    <div class="foot" id="foot"></div>
+    <div class="flash" id="flash"></div>
+  </div></div>
+  <div class="side">
+    <h1>Péter hibát talál. 60 másodperc alatt jelzi.</h1>
+    <p class="lead">E.ON szerelői app · „Gyors hibajelentés” funkció · 1. csapat, Corvinus UX/UI Design Day. Kattints végig Péter útját a telefonon, majd nézd meg, mit kap a kolléga.</p>
+    <div class="ctl" role="group" aria-label="Nézet">
+      <button id="bPeter" aria-pressed="true">Péter nézete</button>
+      <button id="bColl" aria-pressed="false">Kolléga nézete</button>
+      <button id="bOff" aria-pressed="false">Offline mód</button>
+      <button id="bReset">Újrakezdés</button>
+    </div>
+    <ol class="steps" id="steps"></ol>
+    <p class="note">Fiktív adatok és cím, demonstrációs célra. A képfelismerés javaslata szimulált.</p>
+  </div>
+</div>
+<script>
+{
+const $=s=>document.querySelector(s);
+const ic={
+ gas:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M3 12h10v8H3M19 12h10v8H19"/><path d="M13 14l3 2-3 2M19 14l-3 2 3 2"/></svg>',
+ seal:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="16" cy="18" r="8"/><path d="M16 4v6M12 18h8"/></svg>',
+ pole:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M16 3v26M8 8h16M10 13h12"/><path d="M24 8l5 9"/></svg>',
+ meter:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="5" width="22" height="22" rx="3"/><path d="M10 13h12M10 19h6"/></svg>',
+ other:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="16" cy="16" r="12"/><path d="M16 9v9M16 22v1"/></svg>'};
+const cats=[
+ {id:'gas',t:'Gázvezeték sérülés',subs:['Horpadás','Repedés','Szivárgás','Átszakadt'],team:'Gázhálózati ügyelet – Dél-Pest'},
+ {id:'seal',t:'Plomba sérült / hiányzik',subs:['Hiányzik','Sérült','Gyanús beavatkozás'],team:'Mérésügyi csoport'},
+ {id:'pole',t:'Oszlop / vezeték',subs:['Leszakadt vezeték','Megdőlt oszlop','Szikrázik'],team:'Áramhálózati üzemzavar-elhárítás'},
+ {id:'meter',t:'Mérőhely hiba',subs:['Törött burkolat','Vízbeázás','Nem mér'],team:'Mérésügyi csoport'},
+ {id:'other',t:'Egyéb / nem tudom',subs:['Nem tudom besorolni'],team:'Diszpécserközpont'}];
+const qs={gas:[['gas','Érzel gázszagot?'],['hiss','Hallasz sziszegést?'],['ppl','Lakott terület / járókelők?']],
+ pole:[['live','Feszültség alatt lehet?'],['road','Úton / járdán fekszik?'],['ppl','Járókelők a közelben?']],
+ def:[['ppl','Közvetlen veszély emberre?'],['stop','Akadályozza a munkát?']]};
+const stepsTxt=[['Indítás','Egy nagy gomb a hüvelykujj alatt, minden képernyőn.'],['Fotó','Előbb kép, utána kérdések – a kép a legtöbb információ.'],['Azonosítás','Az app javasol egy hibatípust, Péter csak megerősíti.'],['Súlyosság','2–3 igen/nem kérdésből az app számolja ki.'],['Küldés','Cím, GPS, címzett automatikus; gépelés helyett hangjegyzet.'],['Visszajelzés','Látja, ki olvasta, ki jön és mikor.']];
+let S;
+function reset(){S={v:'home',photos:0,cat:null,sub:null,ans:{},tags:[],voice:false,rec:false,t0:null,taps:0,sent:null,mode:'peter',offline:S?S.offline:false};render()}
+const sev=()=>{const a=S.ans,c=S.cat;
+ if(c==='gas'&&(a.gas||a.hiss))return'K';if(c==='pole'&&(a.live||a.road))return'K';
+ if(a.ppl||c==='gas'||c==='pole')return'S';return'N'};
+const sevTxt={K:['KRITIKUS','Azonnali kiszállás, ügyelet értesítve'],S:['SÜRGŐS','Kiszállás 4 órán belül'],N:['NORMÁL','Ütemezett javítás']};
+const cat=()=>cats.find(c=>c.id===S.cat);
+const tm=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+const el=()=>S.t0?Math.round((Date.now()-S.t0)/1000):0;
+function stepIdx(){return {home:0,cam:1,id:2,sev:3,det:4,done:5}[S.v]}
+function render(){
+ $('#offbar').classList.toggle('show',S.offline);$('#net').textContent=S.offline?'Nincs jel':'5G ▮▮▮';
+ $('#bOff').setAttribute('aria-pressed',S.offline);$('#bPeter').setAttribute('aria-pressed',S.mode==='peter');$('#bColl').setAttribute('aria-pressed',S.mode==='coll');
+ const si=S.mode==='coll'?6:stepIdx();
+ $('#steps').innerHTML=stepsTxt.map((s,i)=>`<li class="${i<si?'done':i===si?'on':''}"><span class="n">${i+1}</span><span><b>${s[0]}</b>${s[1]}</span></li>`).join('')+`<li class="${S.mode==='coll'?'on':''}"><span class="n">7</span><span><b>Kolléga reakciója</b>Mi történt, hol, mennyire sürgős, mit kell tenni – egy kártyán.</span></li>`;
+ const V=S.mode==='coll'?coll():views[S.v]();$('#view').innerHTML=V[0];$('#foot').innerHTML=V[1];$('#view').scrollTop=0;
+}
+const views={
+ home:()=>[`<p class="sub" style="margin-top:6px">Szia Péter · hétfő, 3/5 munka kész</p>
+  <div class="card job"><small>KÖVETKEZŐ · 19:15</small><div class="h" style="margin:4px 0">Gázmérő csere</div><div>Budapest, Fiktív utca 12. · 1,4 km</div><div class="row" style="margin-top:10px"><span class="tag" style="background:#fff;color:#141414">Munkalap #48213</span><span class="tag" style="background:#333;color:#fff">Navigáció</span></div></div>
+  <div class="card"><small style="color:#5c5c5c">MOST · 18:20 óta</small><div style="font-weight:800;font-size:18px">Mérőhely ellenőrzés</div><div style="color:#5c5c5c">Budapest, Minta tér 4.</div></div>
+  <div class="card"><small style="color:#5c5c5c">20:00</small><div style="font-weight:700">Plomba csere · Próba köz 7.</div></div>`,
+  `<button class="big" data-go="cam">${ic.other.replace('<svg','<svg width="26" height="26"')} Hibát találtam</button>`],
+ cam:()=>[`<div class="cam" id="cam"><svg viewBox="0 0 300 420" preserveAspectRatio="xMidYMid slice"><rect width="300" height="420" fill="#2a3036"/><rect y="250" width="300" height="170" fill="#3b3329"/><rect x="-10" y="190" width="320" height="38" rx="6" fill="#d9a400"/><rect x="-10" y="190" width="320" height="10" fill="#f3c63a"/><path d="M168 188l-6 22 10 4-4 16" stroke="#141414" stroke-width="4" fill="none"/><ellipse cx="166" cy="214" rx="26" ry="10" fill="#7c5f00" opacity=".55"/><rect x="60" y="120" width="180" height="180" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="18 10" opacity=".8"/></svg>
+  <div class="hint">Fotózd a sérülést közelről. Ha tudod, egy távoli képet is.</div><div class="cnt">${S.photos}/3 fotó</div></div>
+  <div class="camrow" style="padding:14px 0"><button class="link" data-go="id" data-skip="1">Fotó nélkül</button><button class="shut" id="shut" aria-label="Fotó készítése"></button><span></span></div>`,
+  `<button class="big dark" data-go="id" ${S.photos?'':'disabled'}>Tovább (${S.photos} fotó)</button>`],
+ id:()=>{const c=cat();return[`<div class="h">Mit találtál?</div><p class="sub">A fotó alapján ezt javasoljuk. Ha nem stimmel, válassz lent.</p>
+  ${S.photos?`<button class="tile ai" data-cat="gas" aria-pressed="${S.cat==='gas'}" style="width:100%;min-height:76px;margin-bottom:10px;${S.cat==='gas'?'background:#141414;color:#fff;border-color:#141414':''}"><span class="row">${ic.gas}<span>Gázvezeték sérülés<br><span style="font-weight:600;font-size:13px">Javaslat · <span class="pct">87% egyezés</span> · repedés</span></span></span></button>`:''}
+  <div class="grid2">${cats.filter(x=>!(S.photos&&x.id==='gas')).map(x=>`<button class="tile" data-cat="${x.id}" aria-pressed="${S.cat===x.id}">${ic[x.id]}<span>${x.t}</span></button>`).join('')}</div>
+  ${c?`<p style="font-weight:800;margin:14px 0 0">Milyen jellegű?</p><div class="chips">${c.subs.map(s=>`<button class="chip" data-sub="${s}" aria-pressed="${S.sub===s}">${s}</button>`).join('')}<button class="chip" data-sub="Nem tudom" aria-pressed="${S.sub==='Nem tudom'}">Nem tudom</button></div>`:''}`,
+  `<button class="big dark" data-go="sev" ${S.cat&&S.sub?'':'disabled'}>Tovább</button>`]},
+ sev:()=>{const l=qs[S.cat]||qs.def,all=l.every(q=>q[0] in S.ans),v=sev();return[`<div class="h">Mennyire sürgős?</div><p class="sub">Válaszolj, a besorolást az app adja.</p>
+  ${l.map(q=>`<div class="q"><span>${q[1]}</span><span class="yn"><button class="y" data-q="${q[0]}" data-a="1" aria-pressed="${S.ans[q[0]]===true}">Igen</button><button class="n" data-q="${q[0]}" data-a="0" aria-pressed="${S.ans[q[0]]===false}">Nem</button></span></div>`).join('')}
+  ${all?`<div class="sev ${v}"><div class="lvl">${sevTxt[v][0]}</div>${sevTxt[v][1]}</div>${v==='K'&&S.cat==='gas'?`<div class="card" style="margin-top:10px;border-color:var(--red)"><b>Most:</b> távolodj el, ne használj nyílt lángot, ne kapcsolj villanyt. A jelentés elküldése után az ügyelet visszahív.</div>`:''}`:''}`,
+  `<button class="big" data-go="det" ${all?'':'disabled'}>Tovább a küldéshez</button>`]},
+ det:()=>{const c=cat(),v=sev();return[`<div class="h">Ellenőrizd és küldd</div>
+  <div class="card"><div class="row" style="justify-content:space-between"><b>${c.t}</b><span class="tag" style="background:${v==='K'?'var(--red)':v==='S'?'var(--amb)':'#2c2c2c'};color:${v==='S'?'#141414':'#fff'}">${sevTxt[v][0]}</span></div><div style="color:#5c5c5c">${S.sub}</div></div>
+  <div class="card"><b>Helyszín</b><div>Budapest, Minta tér 4. előtt</div><div style="color:#5c5c5c;font-size:14px">GPS ±4 m · munkalapról: Mérőhely ellenőrzés</div></div>
+  <div class="card row" style="justify-content:space-between"><span><b>Fotók</b><br><span style="color:#5c5c5c;font-size:14px">${S.photos||'Nincs'} csatolva</span></span><span class="thumbs">${'<i></i>'.repeat(S.photos)}</span></div>
+  <button class="mic ${S.rec?'rec':''}" id="mic">${S.rec?'● Felvétel… koppints a befejezéshez':S.voice?'✓ Hangjegyzet 0:12 · átírva':'Hangjegyzet felvétele (gépelés helyett)'}</button>
+  <div class="chips" style="margin-top:10px">${['Területet lezártam','Útlezárás kell','Anyag kell','Ügyfél jelen van'].map(t=>`<button class="chip" data-tag="${t}" aria-pressed="${S.tags.includes(t)}">${t}</button>`).join('')}</div>
+  <p class="sub" style="margin:0 0 6px">Címzett (automatikus): <b style="color:#141414">${c.team}</b>${v==='K'?' + diszpécser + műszakvezető':''}</p>`,
+  `<button class="big" data-go="done">Küldés most</button>`]},
+ done:()=>{const v=sev(),c=cat(),q=S.offline;return[`<div class="h">${q?'Elmentve, sorban áll':'Elküldve'}</div><p class="sub">${q?'Amint lesz térerő, automatikusan továbbítjuk. Kritikus hibánál hívd a 24 órás ügyeletet.':'A kollégák megkapták. Itt látod, ki mit csinál.'}</p>
+  <div class="stat"><div><b>${tm(S.sent)}</b>bejelentés ideje</div><div><b>${S.taps}</b>koppintás, 0 gépelés</div></div>
+  <ul class="tl">${[['Jelentés elküldve',q?'várakozik':'18:52',!q],['Kézbesítve: '+c.team,'18:52',!q],['Látta: Kovács Béla (diszpécser)','18:53',!q],['Kiosztva: Nagy Tamás · érkezés ~25 perc','18:54',!q&&v!=='N']].map(x=>`<li class="${x[2]?'ok':''}"><span class="d"></span><span>${x[0]}</span><small>${x[2]?x[1]:''}</small></li>`).join('')}</ul>
+  <p style="font-weight:800;margin:6px 0 0">Gyors válasz a csapatnak</p><div class="chips">${['Biztosítom a helyszínt','Elhagytam a helyszínt','Kell még segítség'].map(t=>`<button class="chip">${t}</button>`).join('')}</div>`,
+  `${q?'':`<button class="big ghost" id="toColl">Megnézem, mit kap a kolléga</button>`}<button class="big dark" id="back">Vissza a munkáimhoz</button>`]}
+};
+function coll(){const c=cat()||cats[0],v=S.cat?sev():'K';return[`<p class="sub" style="margin-top:6px">Nagy Tamás telefonja · push értesítés</p>
+ <div class="sev ${v}" style="margin-top:0"><div class="lvl">${sevTxt[v][0]}</div>${c.t} · ${S.sub||'Repedés'}</div>
+ <div class="card" style="margin-top:10px"><b>Hol?</b> Budapest, Minta tér 4. előtt · 3,2 km<div class="map"><svg viewBox="0 0 300 110" preserveAspectRatio="none"><path d="M0 70h300M120 0v110M0 25l300 30" stroke="#fff" stroke-width="10"/><circle cx="160" cy="62" r="11" fill="var(--red)"/><circle cx="160" cy="62" r="24" fill="var(--red)" opacity=".2"/></svg></div></div>
+ <div class="card"><b>Mi történt?</b> „Gázvezeték a mérőhely előtt, a cső tetején repedés, ${S.ans.gas?'gázszag érezhető':'gázszag nem érezhető'}.” <span style="color:#5c5c5c;font-size:13px">– hangjegyzet átirata</span><div class="thumbs" style="margin-top:8px"><i></i><i></i></div></div>
+ <div class="card"><b>Bejelentő:</b> Szabó Péter · 18:52 ${S.tags.length?'<br><span style="color:#5c5c5c">'+S.tags.join(' · ')+'</span>':''}</div>
+ <div class="card todo"><b>Mit kell tenni?</b>${(c.id==='gas'?['Gáz elzárása a leágazásnál','Terület lezárása 20 m','Cső cseréje / bilincs']:['Helyszín ellenőrzése','Javítás ütemezése']).map(t=>`<label><input type="checkbox">${t}</label>`).join('')}</div>`,
+ `<div class="grid2"><button class="big ghost">Továbbküldöm</button><button class="big">Elvállalom</button></div><button class="big ghost" id="callP">Péter hívása</button>`]}
+document.addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b)return;
+ if($('#scr').contains(b))S.taps++;
+ if(b.id==='bReset')return reset();
+ if(b.id==='bOff'){S.offline=!S.offline;return render()}
+ if(b.id==='bPeter'){S.mode='peter';return render()}
+ if(b.id==='bColl'||b.id==='toColl'){S.mode='coll';return render()}
+ if(b.id==='back'){const o=S.offline;reset();return}
+ if(b.id==='shut'){if(S.photos<3)S.photos++;const f=$('#flash');f.style.opacity=.9;setTimeout(()=>f.style.opacity=0,120);return render()}
+ if(b.id==='mic'){if(S.rec){S.rec=false;S.voice=true}else S.rec=true;return render()}
+ if(b.dataset.cat){S.cat=b.dataset.cat;S.sub=b.dataset.cat==='gas'&&S.photos?'Repedés':null;S.ans={};return render()}
+ if(b.dataset.sub){S.sub=b.dataset.sub;return render()}
+ if(b.dataset.q){S.ans[b.dataset.q]=b.dataset.a==='1';return render()}
+ if(b.dataset.tag){const t=b.dataset.tag;S.tags=S.tags.includes(t)?S.tags.filter(x=>x!==t):[...S.tags,t];return render()}
+ if(b.dataset.go){const g=b.dataset.go;if(g==='cam')S.t0=Date.now();if(g==='id'&&S.photos&&!S.cat){S.cat='gas';S.sub='Repedés'}if(g==='done')S.sent=Math.max(el(),1);S.v=g;render()}
+});
+reset();
+}
+</script>
+</body>
+</html>
